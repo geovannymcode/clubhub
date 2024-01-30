@@ -3,9 +3,11 @@ package command
 import (
 	"encoding/json"
 	"net/http"
-	//"regexp"
-	//"sort"
-	//"time"
+	"regexp"
+	"sort"
+	"time"
+
+	"github.com/Geovanny0401/clubhub/internal/core/domain"
 )
 
 func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
@@ -20,8 +22,7 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) {
 	RespondWithJSON(w, code, map[string]string{"message": msg})
 }
 
-/*
-func GetLowestGradeCurrent(data []Endpoint) string {
+func GetLowestGradeCurrent(data []domain.Endpoint) string {
 	var gradeASCII []int
 	var grade string
 
@@ -44,7 +45,7 @@ func GetLowestGradeCurrent(data []Endpoint) string {
 	return grade
 }
 
-func GetLowestGradePrevious(detail []DetailDomain) string {
+func GetLowestGradePrevious(detail []domain.DetailDomain) string {
 	var gradeASCII []int
 	var grade string
 
@@ -67,7 +68,7 @@ func GetLowestGradePrevious(detail []DetailDomain) string {
 	return grade
 }
 
-func ValidateChangeServer(loc *time.Location, payload Domain, data SSL, detailsDomain []DetailDomain, changeServer bool) bool {
+func ValidateChangeServer(loc *time.Location, payload domain.Domain, data domain.SSL, detailsDomain []domain.DetailDomain, changeServer bool) bool {
 	hours := DiffHours(loc, payload)
 	if hours >= 1 {
 		if len(data.Endpoints) == len(detailsDomain) {
@@ -85,17 +86,17 @@ func ValidateChangeServer(loc *time.Location, payload Domain, data SSL, detailsD
 	return changeServer
 }
 
-func DiffHours(loc *time.Location, payload Domain) float64 {
+func DiffHours(loc *time.Location, payload domain.Domain) float64 {
 	t1 := time.Date(time.Now().Year(),
 		time.Now().Month(),
 		time.Now().Day(),
 		time.Now().Hour(),
 		0, 0, 0, loc)
 
-	t2 := time.Date(payload.LastConsultation.Year(),
-		payload.LastConsultation.Month(),
-		payload.LastConsultation.Day(),
-		payload.LastConsultation.Hour(),
+	t2 := time.Date(payload.LastConsult.Year(),
+		payload.LastConsult.Month(),
+		payload.LastConsult.Day(),
+		payload.LastConsult.Hour(),
 		0, 0, 0, loc)
 
 	return t1.Sub(t2).Hours()
@@ -106,4 +107,3 @@ func ValidateURL(address string) string {
 	address = space.ReplaceAllString(address, "")
 	return address
 }
-*/

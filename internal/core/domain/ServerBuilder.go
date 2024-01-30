@@ -1,8 +1,6 @@
 package domain
 
-import (
-	"github.com/Geovanny0401/clubhub/internal/adapter/handler/command"
-)
+import "github.com/Geovanny0401/clubhub/internal/adapter/handler/command"
 
 func BuilderAddress(payload []Domain) Items {
 	payloadItems := Items{}
@@ -15,23 +13,22 @@ func BuilderAddress(payload []Domain) Items {
 	return payloadItems
 }
 
-/*
 func BuildServer(data SSL, detailsDomain []DetailDomain, changeServer bool, pageTitle string, pageLogo string) DataServer {
 
-		currentGrade := command.GetLowestGradeCurrent(data.Endpoints)
-		var previousGrade string
+	currentGrade := command.GetLowestGradeCurrent(data.Endpoints)
+	var previousGrade string
 
-		if detailsDomain == nil {
-			previousGrade = currentGrade
-		} else {
-			previousGrade = command.GetLowestGradePrevious(detailsDomain)
-		}
-
-		dataServer := buildData(data, currentGrade, previousGrade, changeServer, pageTitle, pageLogo)
-
-		return dataServer
+	if detailsDomain == nil {
+		previousGrade = currentGrade
+	} else {
+		previousGrade = command.GetLowestGradePrevious(detailsDomain)
 	}
-*/
+
+	dataServer := buildData(data, currentGrade, previousGrade, changeServer, pageTitle, pageLogo)
+
+	return dataServer
+}
+
 func buildData(data SSL, currentGrade string, previousGrade string, changeServer bool, pageTitle string, pageLogo string) DataServer {
 	servers := make([]Server, 0)
 	dataServer := DataServer{}
