@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Geovanny0401/clubhub/internal/core/domain"
+	coreDomain "github.com/Geovanny0401/clubhub/internal/core/domain"
 )
 
 func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
@@ -22,7 +22,7 @@ func RespondWithError(w http.ResponseWriter, code int, msg string) {
 	RespondWithJSON(w, code, map[string]string{"message": msg})
 }
 
-func GetLowestGradeCurrent(data []domain.Endpoint) string {
+func GetLowestGradeCurrent(data []coreDomain.Endpoint) string {
 	var gradeASCII []int
 	var grade string
 
@@ -45,7 +45,7 @@ func GetLowestGradeCurrent(data []domain.Endpoint) string {
 	return grade
 }
 
-func GetLowestGradePrevious(detail []domain.DetailDomain) string {
+func GetLowestGradePrevious(detail []coreDomain.DetailDomain) string {
 	var gradeASCII []int
 	var grade string
 
@@ -68,7 +68,7 @@ func GetLowestGradePrevious(detail []domain.DetailDomain) string {
 	return grade
 }
 
-func ValidateChangeServer(loc *time.Location, payload domain.Domain, data domain.SSL, detailsDomain []domain.DetailDomain, changeServer bool) bool {
+func ValidateChangeServer(loc *time.Location, payload coreDomain.Domain, data coreDomain.SSL, detailsDomain []coreDomain.DetailDomain, changeServer bool) bool {
 	hours := DiffHours(loc, payload)
 	if hours >= 1 {
 		if len(data.Endpoints) == len(detailsDomain) {
@@ -86,7 +86,7 @@ func ValidateChangeServer(loc *time.Location, payload domain.Domain, data domain
 	return changeServer
 }
 
-func DiffHours(loc *time.Location, payload domain.Domain) float64 {
+func DiffHours(loc *time.Location, payload coreDomain.Domain) float64 {
 	t1 := time.Date(time.Now().Year(),
 		time.Now().Month(),
 		time.Now().Day(),

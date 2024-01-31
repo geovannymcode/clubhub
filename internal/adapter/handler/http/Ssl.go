@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Geovanny0401/clubhub/internal/core/domain"
+	coreDomain "github.com/Geovanny0401/clubhub/internal/core/domain"
 )
 
-func GetDataSSl(address string) (domain.SSL, error) {
+func GetDataSSl(address string) (coreDomain.SSL, error) {
 	response, err := http.Get("https://api.ssllabs.com/api/v3/analyze?host=" + address)
 
 	if err != nil {
@@ -26,7 +26,7 @@ func GetDataSSl(address string) (domain.SSL, error) {
 		log.Println(err)
 	}
 
-	var responseSSL domain.SSL
+	var responseSSL coreDomain.SSL
 	json.Unmarshal(responseData, &responseSSL)
 
 	return responseSSL, err
