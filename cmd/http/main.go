@@ -15,12 +15,14 @@ import (
 )
 
 func main() {
+
 	dbName := os.Getenv("DB_NAME")
 	dbHost := os.Getenv("DB_HOST")
 	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
 	dbPort := os.Getenv("DB_PORT")
 
-	connection, err := postgres.ConnectSQL(dbHost, dbPort, dbUser, "", dbName)
+	connection, err := postgres.ConnectSQL(dbHost, dbPort, dbUser, dbPassword, dbName)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

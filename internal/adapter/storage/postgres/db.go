@@ -17,8 +17,9 @@ var dbConn = &DB{}
 func ConnectSQL(host, port, user, pass, dbname string) (*DB, error) {
 
 	dbSource := fmt.Sprintf(
-		"postgresql://%s@%s:%s/%s?sslmode=disable",
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		user,
+		pass,
 		host,
 		port,
 		dbname,
