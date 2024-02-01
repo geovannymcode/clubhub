@@ -1,5 +1,6 @@
 package domain
 
+// Endpoint details technical and security assessment results for a server, including SSL grade and warnings.
 type Endpoint struct {
 	IpAddress         string `json:"ipAddress"`
 	ServerName        string `json:"serverName"`

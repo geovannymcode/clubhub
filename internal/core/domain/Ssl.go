@@ -1,5 +1,6 @@
 package domain
 
+// SSL captures the results of an SSL test on a host, including status, protocol, and endpoints assessed.
 type SSL struct {
 	Host            string     `json:"host"`
 	Port            int64      `json:"port"`

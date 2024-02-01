@@ -7,13 +7,23 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/Geovanny0401/clubhub/docs"
 	ht "github.com/Geovanny0401/clubhub/internal/adapter/handler/http"
 	"github.com/Geovanny0401/clubhub/internal/adapter/storage/postgres"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title					Go CLubhub API
+// @version					1.0
+// @summary                 Clubhub
+// @description             This is a simple technical test for senior backend position at clubhub
+// @contact.name			Geovanny Mendoza
+// @contact.url				https://github.com/Geovanny0401/clubhub
+// @contact.email			me@geovannycode.com
+// @BasePath                /
 func main() {
 
 	dbName := os.Getenv("DB_NAME")
@@ -32,6 +42,7 @@ func main() {
 	initDataBase(connection.SQL)
 
 	router := chi.NewRouter()
+
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
@@ -42,6 +53,10 @@ func main() {
 	router.Route("/", func(rt chi.Router) {
 		rt.Mount("/clubhub", domainRouter(dHandler))
 	})
+
+	router.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8001/swagger/doc.json"),
+	))
 
 	http.ListenAndServe(":8001", router)
 }

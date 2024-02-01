@@ -15,16 +15,25 @@ import (
 	coreUtil "github.com/Geovanny0401/clubhub/internal/core/util"
 )
 
+// NewServerHandler creates a new ServerHandler instance
 func NewServerHandler(db *storagePostgres.DB) *Domain {
 	return &Domain{
 		repo: postgresRespository.NewSQLDomainRepo(db.SQL),
 	}
 }
 
+// Domain wraps a DomainRepo interface for dependency injection or repository abstraction.
 type Domain struct {
 	repo corePort.DomainRepo
 }
 
+// @summary We Get By Address
+// @description GetByAddress We get all the information by address
+// @accept	json
+// @produce	json
+// @Produce json
+// @Param   address path string true "address"
+// @Router /clubhub/address/{address} [get]
 func (rp *Domain) GetByAddress(w http.ResponseWriter, r *http.Request) {
 	address := chi.URLParam(r, "address")
 	address = handlerCommand.ValidateURL(address)
@@ -88,6 +97,11 @@ func (rp *Domain) GetByAddress(w http.ResponseWriter, r *http.Request) {
 	handlerCommand.RespondWithJSON(w, http.StatusOK, dataServer)
 }
 
+// @summary Get All Addresses
+// @description GetAllAddress We get all the addresses we have consulted.
+// @accept  json
+// @produce  json
+// @router /clubhub [get]
 func (rp *Domain) GetAllAddress(w http.ResponseWriter, r *http.Request) {
 	payload, err := rp.repo.GetAllDomain(r.Context())
 
@@ -100,6 +114,7 @@ func (rp *Domain) GetAllAddress(w http.ResponseWriter, r *http.Request) {
 	handlerCommand.RespondWithJSON(w, http.StatusOK, payloadItems)
 }
 
+// Method that saves the main details of the domain or server
 func saveDetailDomain(data coreDomain.SSL, idDomain int64, rp *Domain, w http.ResponseWriter, r *http.Request) {
 	loc, _ := time.LoadLocation("America/Bogota")
 
