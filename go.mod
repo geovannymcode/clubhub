@@ -7,10 +7,16 @@ require (
 	github.com/go-chi/chi v1.5.5
 	github.com/go-chi/cors v1.2.1
 	github.com/lib/pq v1.10.9
+	github.com/likexian/whois v1.15.1
+	github.com/likexian/whois-parser v1.24.10
 	github.com/swaggo/swag v1.16.2
 )
 
-require github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
+require (
+	github.com/likexian/gokit v0.25.13 // indirect
+	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
+	golang.org/x/text v0.14.0 // indirect
+)
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
