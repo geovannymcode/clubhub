@@ -56,11 +56,23 @@ Este el diseño de la Arquitectura Hexagonal en la aplicación como esta compues
 - Path : `/clubhub`
 - Method: `GET`
 - Response: `200`
+Url: 
+```bash
+curl --request GET \
+  --url 'http://localhost:8001/clubhub?=' \
+  --header 'User-Agent: insomnia/8.6.0'
+```
   
 ### Detalle por Address
 - Path : `/clubhub/address={address}`
 - Method: `GET`
 - Response: `200`
 
+Url: 
+```bash
+curl --request GET \
+  --url 'http://localhost:8001/clubhub/address=marriott.com?=' \
+  --header 'User-Agent: insomnia/8.6.0' 
+```
 
 
