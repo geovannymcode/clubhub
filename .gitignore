@@ -22,3 +22,13 @@ go.work
 
 **/.DS_Store
 data/
+
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# Build from source; do not commit executable artifacts.
+/http
+/cmd/http/http
+SECURITY.md
