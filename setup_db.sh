@@ -1,15 +1,10 @@
-#!/bin/bash
-set -e
-
-# Parámetros de conexión a PostgreSQL
-export PGPASSWORD=postgres
-HOST="clubhubdb"
-USER="postgres"
-DB="clubhub"
-PORT="5432"
-
-# Conectándose a PostgreSQL y ejecutando comandos SQL
-psql -h $HOST -U $USER -p $PORT -d $DB <<-EOSQL
-    CREATE DATABASE clubhub;
-    GRANT ALL PRIVILEGES ON DATABASE clubhub TO clubhub;
-EOSQL
+#!/bin/sh
+set -eu
+# PostgreSQL's image creates DB_NAME on first startup. Never embed credentials.
+: "${DB_HOST:?Set DB_HOST}"
+: "${DB_PORT:?Set DB_PORT}"
+: "${DB_USER:?Set DB_USER}"
+: "${DB_PASSWORD:?Set DB_PASSWORD}"
+: "${DB_NAME:?Set DB_NAME}"
+export PGPASSWORD="$DB_PASSWORD"
+exec psql -v ON_ERROR_STOP=1 -h "$DB_HOST" -U "$DB_USER" -p "$DB_PORT" -d "$DB_NAME" -c 'SELECT 1'

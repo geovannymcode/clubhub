@@ -1,27 +1,14 @@
-FROM golang:1.21.6-alpine as builder
-# Whois is required for logic the business.
-RUN apk add whois
-# Create folder app
-RUN mkdir /app
-# Create and change to the app directory.
+FROM golang:1.26.10-alpine AS builder
 WORKDIR /app
-
-COPY run.sh /run.sh
-RUN chmod +x /run.sh
-# Copy go.mod and if present go.sum.
 COPY go.mod go.sum ./
-# Download all dependancies. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
-
 COPY . .
-# Build the Go app
-RUN go build -v -o main ./cmd/http
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /clubhub ./cmd/http
 
-# Final stage
-FROM alpine
+FROM alpine:3.24
+RUN apk add --no-cache ca-certificates && addgroup -S app && adduser -S -G app app
 WORKDIR /app
-
-# Copy the Pre-built binary file from the previous stage
-COPY --from=builder /app/main .
-
-CMD ["/app/main"]
+COPY --from=builder /clubhub /app/clubhub
+USER app:app
+EXPOSE 8001
+CMD ["/app/clubhub"]

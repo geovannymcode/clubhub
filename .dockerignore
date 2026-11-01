@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+!.env.example
+data
+http
+cmd/http/http
+**/*_test.go
+.DS_Store
