@@ -3,112 +3,55 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 
 	coreDomain "github.com/Geovanny0401/clubhub/internal/core/domain"
 	corePort "github.com/Geovanny0401/clubhub/internal/core/port"
 )
 
-func NewSQLDomainRepo(Conn *sql.DB) corePort.DomainRepo {
-	return &sqlDomainRepo{
-		Conn: Conn,
-	}
+func NewSQLDomainRepo(conn *sql.DB) corePort.DomainRepo { return &sqlDomainRepo{Conn: conn} }
+
+type sqlDomainRepo struct{ Conn *sql.DB }
+
+func (repo *sqlDomainRepo) CreateDomain(ctx context.Context, domain coreDomain.Domain) (int64, error) {
+	var id int64
+	err := repo.Conn.QueryRowContext(ctx, "INSERT INTO domain(address, last_consult) VALUES($1, $2) RETURNING id", domain.Address, domain.LastConsult).Scan(&id)
+	return id, err
 }
 
-type sqlDomainRepo struct {
-	Conn *sql.DB
-}
-
-func (sql *sqlDomainRepo) CreateDomain(ctx context.Context, domain coreDomain.Domain) (int64, error) {
-	var domainId int64
-	query := "INSERT INTO domain(address, last_consult) VALUES($1, $2) RETURNING id"
-
-	stmt, err := sql.Conn.PrepareContext(ctx, query)
-	if err != nil {
-		log.Println(err)
-	}
-	defer stmt.Close()
-
-	err = stmt.QueryRow(domain.Address, domain.LastConsult).Scan(&domainId)
-	if err != nil {
-		return -1, err
-	}
-
-	return domainId, err
-
-}
-
-func (sql *sqlDomainRepo) CreateDetailDomain(ctx context.Context, detailDomain coreDomain.DetailDomain) error {
-	query := "INSERT INTO detail_domain(id_domain, ipaddress, servername, grade, date) VALUES($1, $2, $3, $4, $5)"
-
-	stmt, err := sql.Conn.PrepareContext(ctx, query)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	_, err = stmt.ExecContext(ctx, detailDomain.DomainID, detailDomain.IpAddress, detailDomain.ServerName, detailDomain.Grade, detailDomain.Date)
-	defer stmt.Close()
-
-	if err != nil {
-		log.Println(err)
-	}
-
+func (repo *sqlDomainRepo) CreateDetailDomain(ctx context.Context, detail coreDomain.DetailDomain) error {
+	_, err := repo.Conn.ExecContext(ctx, "INSERT INTO detail_domain(id_domain, ipaddress, servername, grade, date) VALUES($1, $2, $3, $4, $5)", detail.DomainID, detail.IpAddress, detail.ServerName, detail.Grade, detail.Date)
 	return err
 }
 
-func (sql *sqlDomainRepo) UpdateLastGetDomain(ctx context.Context, DomainId int64, date time.Time) error {
-	query := "UPDATE domain SET last_consult = $1 WHERE id = $2"
-
-	stmt, err := sql.Conn.PrepareContext(ctx, query)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	_, err = stmt.ExecContext(ctx, date, DomainId)
-	defer stmt.Close()
-
-	if err != nil {
-		log.Println(err)
-	}
-
+func (repo *sqlDomainRepo) UpdateLastGetDomain(ctx context.Context, id int64, date time.Time) error {
+	_, err := repo.Conn.ExecContext(ctx, "UPDATE domain SET last_consult = $1 WHERE id = $2", date, id)
 	return err
 }
 
-func (sql *sqlDomainRepo) GetAllDomain(ctx context.Context) ([]coreDomain.Domain, error) {
-	query := "SELECT dm.id, dm.address, dm.last_consult FROM domain AS dm"
-
-	rows, err := sql.Conn.QueryContext(ctx, query)
-
+func (repo *sqlDomainRepo) GetAllDomain(ctx context.Context) ([]coreDomain.Domain, error) {
+	rows, err := repo.Conn.QueryContext(ctx, "SELECT id, address, last_consult FROM domain ORDER BY id DESC LIMIT 1000")
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-
+	defer rows.Close()
 	return coreDomain.BuildDomains(rows)
 }
 
-func (sql *sqlDomainRepo) GetDomainByAddress(ctx context.Context, address string) (coreDomain.Domain, error) {
-	query := "SELECT dm.id, dm.address, dm.last_consult FROM domain AS dm WHERE dm.address = $1"
-
-	rows, err := sql.Conn.QueryContext(ctx, query, address)
-
+func (repo *sqlDomainRepo) GetDomainByAddress(ctx context.Context, address string) (coreDomain.Domain, error) {
+	rows, err := repo.Conn.QueryContext(ctx, "SELECT id, address, last_consult FROM domain WHERE address = $1 LIMIT 1", address)
 	if err != nil {
-		log.Println(err)
+		return coreDomain.Domain{}, err
 	}
-
+	defer rows.Close()
 	return coreDomain.BuildDomain(rows)
 }
 
-func (sql *sqlDomainRepo) GetDetailsByDomain(ctx context.Context, idDomain int64, countServer int) ([]coreDomain.DetailDomain, error) {
-	query := "SELECT dt.id, dt.id_domain, dt.ipaddress, dt.grade, dt.servername, dt.date FROM domain AS dm INNER JOIN detail_domain AS dt ON dt.id_domain = dm.id WHERE dm.id = $1 ORDER BY dt.id, dt.date DESC LIMIT $2"
-
-	rows, err := sql.Conn.QueryContext(ctx, query, idDomain, countServer)
-
+func (repo *sqlDomainRepo) GetDetailsByDomain(ctx context.Context, id int64, count int) ([]coreDomain.DetailDomain, error) {
+	rows, err := repo.Conn.QueryContext(ctx, "SELECT id, id_domain, ipaddress, grade, servername, date FROM detail_domain WHERE id_domain = $1 ORDER BY date DESC, id DESC LIMIT $2", id, min(count, 100))
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-
+	defer rows.Close()
 	return coreDomain.BuildDetailsDomain(rows)
 }
