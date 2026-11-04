@@ -4,7 +4,7 @@ Prueba técnica para puesto senior de backend en clubhub
 ## Descripción
 Se desarrollo un servicio web RESTful escrito en el lenguaje de programación Go. Este proyecto es parte de una prueba técnica para una vacante de senior de backend en clubhub, donde se necesitaba diseñar y construir un servicio que permita la administración de franquicias hoteleras, debe permitir almacenar, consultar y actualizar la información. Esta prueba contribuyo a mi proceso de aprendizaje en el lenguaje y la comprensión de la Arquitectura Hexagonal implementada en Go.
 
-Utilice [Chi](https://github.com/go-chi/chi) como enrutador HTTP, [PostgreSQL](https://www.postgresql.org/) como base de datos con [pq](https://github.com/lib/pq), Tambien [swagger](https://github.com/swaggo/http-swagger), [swag](https://github.com/swaggo/swag) para generar la documentacion en swagger y [goquery](github.com/PuerkitoBio/goquery) como consultaen documento HTML.
+Utilice [Chi v5](https://github.com/go-chi/chi) como enrutador HTTP, [PostgreSQL](https://www.postgresql.org/) como base de datos con [pq](https://github.com/lib/pq), [swag](https://github.com/swaggo/swag) para generar la documentación OpenAPI y [goquery](github.com/PuerkitoBio/goquery) como consultaen documento HTML.
 
 Por otra parte se usaron los siguientes patrones de diseño.
   - **Pattern Adapter**
@@ -13,37 +13,19 @@ Por otra parte se usaron los siguientes patrones de diseño.
   - **Pattern Factory**
 
 ## Ejecutar Proyecto
-En primer lugar se debe clonar el repositorio donde se encuentra el proyecto. Luego ubicarse dentro de la carpeta de clubhub. Después vamos a construir ejecutar Docker. Asegúrese de que tiene docker instalado en su máquina. 
 
+Se requiere Go 1.26.10 o superior. La imagen Docker incluye esta versión con correcciones de seguridad.
 
-1) Clonamos el repositorio
-```bash
-git clone https://github.com/Geovanny0401/clubhub
-```
+1. Copie `.env.example` a `.env` y configure `DB_ADMIN_PASSWORD`, `DB_PASSWORD` y `API_TOKEN` con secretos independientes generados con `openssl rand -hex 32`.
+2. Proteja el archivo con `chmod 600 .env`.
+3. Para una instalación nueva, ejecute `docker compose up --build -d`.
+4. Envíe `Authorization: Bearer <API_TOKEN>` en cada petición.
 
-2) Nos ubicamos dentro de la carpeta
-```bash
- cd clubhub
-```
+La API está disponible solo en `127.0.0.1:8001`; PostgreSQL no publica puertos. Antes de actualizar una instalación con datos existentes, siga la migración de credenciales en [SECURITY.md](SECURITY.md). Allí se documentan también los límites, el uso de HTTPS y las comprobaciones de seguridad.
 
-3) Comando para subir Imagen
-```bash
-   docker-compose up --build -d
-```
-
-4) Comando para bajar la Imagen
-```bash
-    docker-compose down
-```
-
-5) Esta paso es opcional, despues de ejecutarlo hacemos el paso # 3 
-```bash
-chmod +x run.sh
-./run.sh
-```
 ## Documentación
 
-La documentación de la API se encuentra en el directorio `docs/`. Para ver la documentación, abra el navegador y vaya a `http://localhost:8001/swagger/index.html`. La documentación se genera utilizando [swaggo](https://github.com/swaggo/swag/) con el middleware [gin-swagger](https://github.com/swaggo/gin-swagger/).
+Los archivos OpenAPI están en `docs/` para consulta local. Swagger no se publica por HTTP.
 
 ## Diseño
 Este el diseño de la Arquitectura Hexagonal en la aplicación como esta compuesta.
@@ -60,7 +42,7 @@ Url:
 ```bash
 curl --request GET \
   --url 'http://localhost:8001/clubhub?=' \
-  --header 'User-Agent: insomnia/8.6.0'
+  --header "Authorization: Bearer ${API_TOKEN}"
 ```
   
 ### Detalle por Address
@@ -72,7 +54,7 @@ Url:
 ```bash
 curl --request GET \
   --url 'http://localhost:8001/clubhub/address=marriott.com?=' \
-  --header 'User-Agent: insomnia/8.6.0' 
+  --header "Authorization: Bearer ${API_TOKEN}"
 ```
 
 
