@@ -1,30 +1,22 @@
 package http
 
 import (
-	"log"
-	"net/http"
-	"strings"
+	"bytes"
+	"context"
+	"net/url"
 
+	"github.com/Geovanny0401/clubhub/internal/security"
 	"github.com/PuerkitoBio/goquery"
 )
 
-func GetTitleAndLogo(address string) (string, string, error) {
-	addressComplete := "https://www." + address + "/"
-	response, err := http.Get(addressComplete)
-
+func GetTitleAndLogo(ctx context.Context, address string) (string, string, error) {
+	addressComplete := "https://" + address + "/"
+	body, err := security.Fetch(ctx, addressComplete)
 	if err != nil {
-		log.Println(err)
 		return "", "", err
 	}
-
-	defer response.Body.Close()
-	if response.StatusCode != 200 {
-		log.Printf("status code error: %d %s", response.StatusCode, response.Status)
-	}
-
-	document, err := goquery.NewDocumentFromReader(response.Body)
+	document, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 	if err != nil {
-		log.Println("Error loading HTTP response body. ", err)
 		return "", "", err
 	}
 
@@ -47,8 +39,14 @@ func GetTitleAndLogo(address string) (string, string, error) {
 		}
 	})
 
-	if !strings.Contains(pageLogo, "https") {
-		pageLogo = addressComplete + pageLogo
+	base, _ := url.Parse(addressComplete)
+	logo, parseErr := url.Parse(pageLogo)
+	pageLogo = ""
+	if parseErr == nil && logo != nil {
+		logo = base.ResolveReference(logo)
+		if logo.Scheme == "https" && logo.User == nil {
+			pageLogo = logo.String()
+		}
 	}
 
 	return pageTitle, pageLogo, err

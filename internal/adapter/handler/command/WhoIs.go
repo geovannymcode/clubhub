@@ -1,67 +1,47 @@
 package command
 
 import (
-	"log"
-	"net"
-
-	"github.com/likexian/whois"
-	whoisparser "github.com/likexian/whois-parser"
+	"context"
+	"fmt"
+	"github.com/Geovanny0401/clubhub/internal/security"
+	"net/netip"
+	"strings"
+	"time"
 )
 
-/*
-Realiza una consulta WHOIS para una dirección IP y devuelve los resultados en un mapa de cadenas.
-La función primero verifica si la dirección IP es válida, realiza la consulta WHOIS utilizando la librería whois,
-analiza los resultados con whois-parser, y finalmente estructura la información relevante en un mapa para ser devuelto.
-Este proceso implica interactuar con servicios externos para obtener información sobre la dirección IP
-y organizar esta información de manera útil para otras partes de la aplicación.
-*/
-func RunWhoIs(ipAddr string) map[string][]string {
-	//net.ParseIP(ipAddr): Intenta convertir la cadena ipAddr en un objeto IP. Si ipAddr no es una dirección IP válida, ParseIP devuelve nil.
-	//if ipObj == nil: Comprueba si ipObj es nil, lo que indica una dirección IP inválida. Si es así, registra un error y retorna un mapa vacío.
-	//Esto evita que el resto de la función se ejecute con una entrada inválida.
-	ipObj := net.ParseIP(ipAddr)
-	if ipObj == nil {
-		log.Println("Invalid IP Address!")
-		return make(map[string][]string)
+// WHOIS enrichment is best effort. Query only a fixed registry, never referrals,
+// with a bounded response and a deadline inherited from the HTTP request.
+func RunWhoIs(ctx context.Context, ipAddr string) map[string][]string {
+	result := make(map[string][]string)
+	ip, err := netip.ParseAddr(ipAddr)
+	if err != nil || !security.PublicIP(ip) {
+		return result
 	}
-
-	//whois.Whois(ipAddr): Realiza una consulta WHOIS para la dirección IP proporcionada.
-	//Esta operación puede fallar por varias razones (e.g., problemas de red, dirección IP sin datos WHOIS disponibles),
-	//en cuyo caso err no será nil.
-	//if err != nil: Si ocurre un error durante la consulta WHOIS, se registra el error y se retorna nil, deteniendo la ejecución de la función.
-	result, err := whois.Whois(ipAddr)
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	conn, err := security.DialPublic(ctx, "tcp", "whois.arin.net:43")
 	if err != nil {
-		log.Println("Error fetching WHOIS data:", err)
-		return nil
+		return result
 	}
-
-	//whoisparser.Parse(result): Intenta analizar la cadena de resultado WHOIS cruda en una estructura estructurada (parsedResult).
-	//Este proceso puede fallar si el formato del resultado WHOIS no es reconocido por el analizador.
-	//if err != nil: Si hay un error durante el análisis, se registra y la función termina retornando nil.
-	parsedResult, err := whoisparser.Parse(result)
+	defer conn.Close()
+	deadline, _ := ctx.Deadline()
+	if err := conn.SetDeadline(deadline); err != nil {
+		return result
+	}
+	stop := context.AfterFunc(ctx, func() { conn.Close() })
+	defer stop()
+	if _, err := fmt.Fprintf(conn, "n + %s\r\n", ip.String()); err != nil {
+		return result
+	}
+	body, err := security.ReadLimited(conn, 256<<10)
 	if err != nil {
-		log.Println("Error parsing WHOIS data:", err)
-		return nil
+		return result
 	}
-	//make(map[string][]string): Inicializa outPut, un mapa para almacenar los resultados del análisis.
-	//Las claves del mapa son cadenas que representan tipos de información (e.g., "DomainName"), y los valores son listas de cadenas.
-	var outPut map[string][]string
-	outPut = make(map[string][]string)
-
-	//if parsedResult.Domain != nil: Verifica si hay información del dominio disponible en el resultado parseado. Si es así,
-	//extrae el nombre del dominio, la fecha de creación y la fecha de expiración, y los almacena en outPut.
-	if parsedResult.Domain != nil {
-		outPut["DomainName"] = []string{parsedResult.Domain.Name}
-		outPut["CreationDate"] = []string{parsedResult.Domain.CreatedDate}
-		outPut["ExpirationDate"] = []string{parsedResult.Domain.ExpirationDate}
+	for _, line := range strings.Split(string(body), "\n") {
+		key, value, ok := strings.Cut(line, ":")
+		if ok && (key == "Country" || key == "OrgName") {
+			result[key] = []string{strings.TrimSpace(value)}
+		}
 	}
-	//if parsedResult.Registrar != nil: Similar al paso anterior, pero para información del registrador.
-	//Si esta información está disponible, extrae el nombre y el correo electrónico del registrador y los almacena en outPut.
-	if parsedResult.Registrar != nil {
-		outPut["RegistrarName"] = []string{parsedResult.Registrar.Name}
-		outPut["RegistrarEmail"] = []string{parsedResult.Registrar.Email}
-	}
-
-	//retorna el mapa outPut lleno con la información extraída del resultado WHOIS parseado.
-	return outPut
+	return result
 }

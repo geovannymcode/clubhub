@@ -39,6 +39,9 @@ func GetLowestGradeCurrent(data []coreDomain.Endpoint) string {
 	//Itera sobre cada endpoint.
 	for _, dataElement := range data {
 		//Si la calificación no es "A+", convierte el primer carácter de Grade a su valor ASCII y lo añade a gradeASCII.
+		if dataElement.Grade == "" {
+			continue
+		}
 		if dataElement.Grade != "A+" {
 			gradeASCII = append(gradeASCII, int(dataElement.Grade[0]))
 		} else {
@@ -53,7 +56,7 @@ func GetLowestGradeCurrent(data []coreDomain.Endpoint) string {
 			return gradeASCII[i] > gradeASCII[j]
 		})
 		//Convierte el valor ASCII más alto de vuelta a un carácter y lo asigna a grade.
-		grade = string(gradeASCII[0])
+		grade = string(rune(gradeASCII[0]))
 	}
 
 	return grade
@@ -66,6 +69,9 @@ func GetLowestGradePrevious(detail []coreDomain.DetailDomain) string {
 	var grade string
 
 	for _, dataElement := range detail {
+		if dataElement.Grade == "" {
+			continue
+		}
 		if dataElement.Grade != "A+" {
 			gradeASCII = append(gradeASCII, int(dataElement.Grade[0]))
 		} else {
@@ -78,7 +84,7 @@ func GetLowestGradePrevious(detail []coreDomain.DetailDomain) string {
 			return gradeASCII[i] > gradeASCII[j]
 		})
 
-		grade = string(gradeASCII[0])
+		grade = string(rune(gradeASCII[0]))
 	}
 
 	return grade

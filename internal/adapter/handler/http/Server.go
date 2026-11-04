@@ -4,8 +4,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Geovanny0401/clubhub/internal/security"
+
 	coreDomain "github.com/Geovanny0401/clubhub/internal/core/domain"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 
 	handlerCommand "github.com/Geovanny0401/clubhub/internal/adapter/handler/command"
 
@@ -36,11 +38,15 @@ type Domain struct {
 // @Router /clubhub/address/{address} [get]
 func (rp *Domain) GetByAddress(w http.ResponseWriter, r *http.Request) {
 	address := chi.URLParam(r, "address")
-	address = handlerCommand.ValidateURL(address)
-
-	data, err := GetDataSSl(address)
+	address, err := security.Domain(address)
 	if err != nil {
-		handlerCommand.RespondWithError(w, http.StatusNoContent, err.Error())
+		handlerCommand.RespondWithError(w, http.StatusBadRequest, "Invalid public domain")
+		return
+	}
+
+	data, err := GetDataSSl(r.Context(), address)
+	if err != nil {
+		handlerCommand.RespondWithError(w, http.StatusBadGateway, "External service unavailable")
 		return
 	}
 
@@ -49,17 +55,21 @@ func (rp *Domain) GetByAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pageTitle, pageLogo, err := GetTitleAndLogo(address)
+	pageTitle, pageLogo, err := GetTitleAndLogo(r.Context(), address)
 	if err != nil {
 		handlerCommand.RespondWithError(w, http.StatusPartialContent, "Address not found")
 		return
 	}
 
-	loc, _ := time.LoadLocation("America/Bogota")
+	loc := time.FixedZone("America/Bogota", -5*60*60)
 	var detailsDomain []coreDomain.DetailDomain
 	var changeServer bool
 
 	payload, err := rp.repo.GetDomainByAddress(r.Context(), address)
+	if err != nil {
+		handlerCommand.RespondWithError(w, http.StatusInternalServerError, "Request could not be completed")
+		return
+	}
 
 	if (coreDomain.Domain{}) == payload {
 		dm := coreDomain.Domain{}
@@ -68,32 +78,41 @@ func (rp *Domain) GetByAddress(w http.ResponseWriter, r *http.Request) {
 
 		idDomain, err := rp.repo.CreateDomain(r.Context(), dm)
 		if err != nil {
-			handlerCommand.RespondWithError(w, http.StatusNoContent, err.Error())
+			handlerCommand.RespondWithError(w, http.StatusInternalServerError, "Request could not be completed")
 			return
 		}
 
-		saveDetailDomain(data, idDomain, rp, w, r)
+		if err := saveDetailDomain(data, idDomain, rp, r); err != nil {
+			handlerCommand.RespondWithError(w, http.StatusInternalServerError, "Request could not be completed")
+			return
+		}
 	} else {
 
 		detailsDomain, err := rp.repo.GetDetailsByDomain(r.Context(), payload.ID, len(data.Endpoints))
 		if err != nil {
-			handlerCommand.RespondWithError(w, http.StatusNoContent, err.Error())
+			handlerCommand.RespondWithError(w, http.StatusInternalServerError, "Request could not be completed")
 			return
 		}
 
 		changeServer = handlerCommand.ValidateChangeServer(loc, payload, data, detailsDomain, changeServer)
 		if changeServer {
 			err = rp.repo.UpdateLastGetDomain(r.Context(), payload.ID, time.Now())
-			saveDetailDomain(data, payload.ID, rp, w, r)
+			if err != nil {
+				handlerCommand.RespondWithError(w, http.StatusInternalServerError, "Request could not be completed")
+				return
+			}
+			if err := saveDetailDomain(data, payload.ID, rp, r); err != nil {
+				handlerCommand.RespondWithError(w, http.StatusInternalServerError, "Request could not be completed")
+				return
+			}
 		}
 	}
 
-	if err != nil {
-		handlerCommand.RespondWithError(w, http.StatusNoContent, "Address not found")
+	dataServer := coreUtil.BuildServer(r.Context(), data, detailsDomain, changeServer, pageTitle, pageLogo)
+	if r.Context().Err() != nil {
+		handlerCommand.RespondWithError(w, http.StatusGatewayTimeout, "Request timed out")
 		return
 	}
-
-	dataServer := coreUtil.BuildServer(data, detailsDomain, changeServer, pageTitle, pageLogo)
 	handlerCommand.RespondWithJSON(w, http.StatusOK, dataServer)
 }
 
@@ -106,7 +125,7 @@ func (rp *Domain) GetAllAddress(w http.ResponseWriter, r *http.Request) {
 	payload, err := rp.repo.GetAllDomain(r.Context())
 
 	if err != nil {
-		handlerCommand.RespondWithError(w, http.StatusNoContent, "Address not found")
+		handlerCommand.RespondWithError(w, http.StatusInternalServerError, "Request could not be completed")
 		return
 	}
 
@@ -115,8 +134,8 @@ func (rp *Domain) GetAllAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 // Method that saves the main details of the domain or server
-func saveDetailDomain(data coreDomain.SSL, idDomain int64, rp *Domain, w http.ResponseWriter, r *http.Request) {
-	loc, _ := time.LoadLocation("America/Bogota")
+func saveDetailDomain(data coreDomain.SSL, idDomain int64, rp *Domain, r *http.Request) error {
+	loc := time.FixedZone("America/Bogota", -5*60*60)
 
 	for _, element := range data.Endpoints {
 		dt := coreDomain.DetailDomain{}
@@ -130,7 +149,8 @@ func saveDetailDomain(data coreDomain.SSL, idDomain int64, rp *Domain, w http.Re
 		err := rp.repo.CreateDetailDomain(r.Context(), dt)
 
 		if err != nil {
-			handlerCommand.RespondWithError(w, http.StatusNoContent, err.Error())
+			return err
 		}
 	}
+	return nil
 }
