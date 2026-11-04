@@ -5,10 +5,10 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /clubhub ./cmd/http
 
-FROM alpine:3.24
-RUN apk add --no-cache ca-certificates && addgroup -S app && adduser -S -G app app
+FROM scratch
 WORKDIR /app
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /clubhub /app/clubhub
-USER app:app
+USER 10001:10001
 EXPOSE 8001
 CMD ["/app/clubhub"]
