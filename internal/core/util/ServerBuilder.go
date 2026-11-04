@@ -1,6 +1,9 @@
 package domain
 
 import (
+	"context"
+	"time"
+
 	handlerCommand "github.com/Geovanny0401/clubhub/internal/adapter/handler/command"
 	coreDomain "github.com/Geovanny0401/clubhub/internal/core/domain"
 )
@@ -24,7 +27,7 @@ func BuilderAddress(payload []coreDomain.Domain) coreDomain.Items {
 
 // Construir un objeto DataServe a partir de la información SSL, detalles del dominio, y otros datos.
 // La función primero calcula las calificaciones SSL actuales y anteriores, luego construye la información del servidor usando buildData.
-func BuildServer(data coreDomain.SSL, detailsDomain []coreDomain.DetailDomain, changeServer bool, pageTitle string, pageLogo string) coreDomain.DataServe {
+func BuildServer(ctx context.Context, data coreDomain.SSL, detailsDomain []coreDomain.DetailDomain, changeServer bool, pageTitle string, pageLogo string) coreDomain.DataServe {
 
 	currentGrade := handlerCommand.GetLowestGradeCurrent(data.Endpoints)
 	var previousGrade string
@@ -35,25 +38,31 @@ func BuildServer(data coreDomain.SSL, detailsDomain []coreDomain.DetailDomain, c
 		previousGrade = handlerCommand.GetLowestGradePrevious(detailsDomain)
 	}
 
-	dataServer := buildData(data, currentGrade, previousGrade, changeServer, pageTitle, pageLogo)
+	dataServer := buildData(ctx, data, currentGrade, previousGrade, changeServer, pageTitle, pageLogo)
 
 	return dataServer
 }
 
 // Auxiliar de BuildServer para construir el objeto DataServe.
 // Esta función crea un slice de Serve basado en los endpoints, asigna varios campos y retorna el DataServe construido.
-func buildData(data coreDomain.SSL, currentGrade string, previousGrade string, changeServer bool, pageTitle string, pageLogo string) coreDomain.DataServe {
+func buildData(ctx context.Context, data coreDomain.SSL, currentGrade string, previousGrade string, changeServer bool, pageTitle string, pageLogo string) coreDomain.DataServe {
 	servers := make([]coreDomain.Serve, 0)
 	dataServer := coreDomain.DataServe{}
 
+	enrichmentCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
 	for _, dataElement := range data.Endpoints {
 		serve := coreDomain.Serve{}
-		result := handlerCommand.RunWhoIs(dataElement.IpAddress)
+		result := handlerCommand.RunWhoIs(enrichmentCtx, dataElement.IpAddress)
 
 		serve.Address = dataElement.IpAddress
 		serve.SslGrade = dataElement.Grade
-		serve.Country = result["Country"][0]
-		serve.Owner = result["OrgName"][0]
+		if values := result["Country"]; len(values) > 0 {
+			serve.Country = values[0]
+		}
+		if values := result["OrgName"]; len(values) > 0 {
+			serve.Owner = values[0]
+		}
 
 		servers = append(servers, serve)
 	}
