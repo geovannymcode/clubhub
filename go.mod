@@ -5,7 +5,7 @@ go 1.26.10
 require (
 	github.com/PuerkitoBio/goquery v1.13.0
 	github.com/go-chi/chi/v5 v5.5.0
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.12.3
 	github.com/swaggo/swag v1.16.2
 )
 
