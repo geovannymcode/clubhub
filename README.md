@@ -14,7 +14,7 @@ Por otra parte se usaron los siguientes patrones de diseño.
 
 ## Ejecutar Proyecto
 
-Se requiere Go 1.26.10 o superior. La imagen Docker incluye esta versión con correcciones de seguridad.
+Se requiere Go 1.26.11 o superior. La imagen Docker incluye esta versión con correcciones de seguridad.
 
 1. Copie `.env.example` a `.env` y configure `DB_ADMIN_PASSWORD`, `DB_PASSWORD` y `API_TOKEN` con secretos independientes generados con `openssl rand -hex 32`.
 2. Proteja el archivo con `chmod 600 .env`.
